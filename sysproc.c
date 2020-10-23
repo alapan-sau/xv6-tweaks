@@ -89,3 +89,16 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// mytweak
+int sys_waitx()
+{
+  int *rtime;
+  int *wtime;
+  if(argptr(0, (void *)&wtime, sizeof(wtime))<0)
+    return -1;
+  if(argptr(0, (void *)&rtime, sizeof(rtime))<0)
+    return -1;
+  return waitx(wtime, rtime);
+}
+//
