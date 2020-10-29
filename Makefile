@@ -90,6 +90,24 @@ ifneq ($(shell $(CC) -dumpspecs 2>/dev/null | grep -e '[^f]nopie'),)
 CFLAGS += -fno-pie -nopie
 endif
 
+# tweak
+# Set scheduler
+SCHED_FLAG = -D SCHEDULER=RR
+
+ifeq ($(SCHEDULER), FCFS)
+SCHED_FLAG = -D SCHEDULER=FCFS
+endif
+
+ifeq ($(SCHEDULER), PBS)
+SCHED_FLAG = -D SCHEDULER=PBS
+endif
+
+ifeq ($(SCHEDULER), MLFQ)
+SCHED_FLAG = -D SCHEDULER=MLFQ
+endif
+
+CFLAGS += $(SCHED_FLAG) ## This will add the sched flag while compiling
+##
 xv6.img: bootblock kernel
 	dd if=/dev/zero of=xv6.img count=10000
 	dd if=bootblock of=xv6.img conv=notrunc
@@ -183,6 +201,7 @@ UPROGS=\
 	_zombie\
 	_time\
 	_benchmark\
+	_test_fcfs\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -252,7 +271,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
-	printf.c umalloc.c time.c benchmark.c\
+	printf.c umalloc.c time.c benchmark.c test_fcfs.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

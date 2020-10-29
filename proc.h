@@ -62,3 +62,9 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+
+//scheduler algos
+#define RR 0
+#define FCFS 1
+#define PBS 2
+#define MLFQ 3
