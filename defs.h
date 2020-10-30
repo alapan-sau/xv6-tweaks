@@ -121,8 +121,9 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 // mytweak
-void            inc_rtime(void);
+void            upd_times(void);
 int             waitx(int*,int*);
+int             set_priority(int, int);
 //
 
 // swtch.S

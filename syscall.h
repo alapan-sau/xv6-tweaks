@@ -22,4 +22,5 @@
 #define SYS_close  21
 // mytweak
 #define SYS_waitx  22
+#define SYS_set_priority 23
 //

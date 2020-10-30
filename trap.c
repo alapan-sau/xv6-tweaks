@@ -52,7 +52,7 @@ trap(struct trapframe *tf)
       acquire(&tickslock);
       ticks++;
       // mytweak
-      inc_rtime();
+      upd_times();
       //
       wakeup(&ticks);
       release(&tickslock);

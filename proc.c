@@ -95,6 +95,9 @@ found:
   release(&tickslock);
   p->etime = 0;
   p->rtime = 0;
+  p->last_wait_time=0;
+  p->total_wait_time=0;
+  p->pri = 60;
   //
   release(&ptable.lock);
 
@@ -131,7 +134,7 @@ userinit(void)
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
   p = allocproc();
-  
+
   initproc = p;
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
@@ -353,6 +356,7 @@ scheduler(void)
         // before jumping back to us.
         c->proc = p;
         switchuvm(p);
+        p->last_wait_time=0;
         p->state = RUNNING;
 
         swtch(&(c->scheduler), p->context);
@@ -386,6 +390,7 @@ scheduler(void)
       // before jumping back to us.
       c->proc = first;
       switchuvm(first);
+      first->last_wait_time=0;
       first->state = RUNNING;
 
       swtch(&(c->scheduler), first->context);
@@ -396,7 +401,46 @@ scheduler(void)
       c->proc = 0;
       release(&ptable.lock);
     #elif SCHEDULER == PBS
-      // TBI
+      int max_last_wait_time = ticks;
+      int min_pri = 101;
+      struct proc *high = 0;
+      // Loop over process table looking for process to run.
+      acquire(&ptable.lock);
+      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->state != RUNNABLE)
+          continue;
+        if(p->pri < min_pri){
+          min_pri = p->pri;
+          max_last_wait_time = p->last_wait_time;
+          high = p;
+        }
+        else if(p->pri == min_pri){
+          if(max_last_wait_time  < p->last_wait_time){
+            max_last_wait_time = p->last_wait_time;
+            high = p;
+          }
+        }
+      }
+      if(high == 0){  // theres no first process
+        release(&ptable.lock);
+        continue;
+      }
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      //cprintf("Process %d priority = %d\n",high->pid,high->pri);
+      c->proc = high;
+      switchuvm(high);
+      high->last_wait_time=0;
+      high->state = RUNNING;
+
+      swtch(&(c->scheduler), high->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+      release(&ptable.lock);
     #elif SCHEDULER == MLFQ
       // TBI
     # endif
@@ -583,10 +627,19 @@ procdump(void)
 
 ///////////////////////////////////
 void
-inc_rtime(){
+upd_times(void){
   struct proc* p;
-  for (p=ptable.proc; p<&ptable.proc[NPROC]; p++)
-    if(p->state == RUNNING) p->rtime++;
+  acquire(&ptable.lock);
+  for(p=ptable.proc; p<&ptable.proc[NPROC]; p++){
+    if(p->state == RUNNING){
+      p->rtime++;
+    }
+    else if(p->state == RUNNABLE){
+      p->last_wait_time++;
+      p->total_wait_time++;
+    }
+  }
+  release(&ptable.lock);
 }
 
 
@@ -611,7 +664,7 @@ waitx(int *wtime, int *rtime)
         // Found one.
         // mytweak
         *rtime = p->rtime;
-        *wtime = p->etime - p->ctime - p->rtime;
+        *wtime = p->total_wait_time;
         //
         pid = p->pid;
         kfree(p->kstack);
@@ -636,4 +689,30 @@ waitx(int *wtime, int *rtime)
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
   }
+}
+
+// set_priority sets the priority of a process(pid) with new_priority
+int
+set_priority(int new_priority,int pid){
+  if(new_priority < 0 || new_priority>100){
+    return -1;
+  }
+
+  struct proc *p;
+  int old_priority;
+
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->pid!=pid) continue;
+
+    // Found the process
+    old_priority = p->pri;
+    release(&ptable.lock);
+    p->pri = new_priority;
+
+    if(new_priority < old_priority) yield();  // mentioned in pdf
+    return old_priority;
+  }
+  release(&ptable.lock);
+  return -1;
 }

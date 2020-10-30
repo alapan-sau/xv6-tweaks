@@ -54,6 +54,9 @@ struct proc {
   uint ctime;
   uint etime;
   uint rtime;
+  uint last_wait_time;
+  uint total_wait_time;
+  uint pri;
   //
 };
 
