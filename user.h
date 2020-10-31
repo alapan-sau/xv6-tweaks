@@ -26,6 +26,7 @@ int uptime(void);
 // mytweak
 int waitx(int*, int*);
 int set_priority(int, int);
+void ps(void);
 //
 // ulib.c
 int stat(const char*, struct stat*);

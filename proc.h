@@ -63,12 +63,11 @@ struct proc {
   uint last_wait_time;
   uint total_wait_time;
   uint pri;
-
-  #if SCHEDULER==MLFQ
+  uint n_run;
   int q_ticks[5];
   int limit_ticks;
+  int aging_ticks;
   int cur_q;
-  #endif
   //
 };
 

@@ -48,7 +48,27 @@ int pop(int q){
     if(isQEmpty(q)) return -1;
 
     int pid = q_pid[q][q_front[q]];
+    q_pid[q][q_front[q]] = -1;
     q_front[q] = (q_front[q]+1)%NPROC;
+    q_size[q]--;
+    return pid;
+}
+
+int removeq(int q, int pid){
+    if(isQEmpty(q)) return -1;
+
+    int i = q_front[q];
+
+    while(pid != q_pid[q][i]){
+        i=(i+1)%NPROC;
+        if(i==q_front[q])return -1;
+    }
+    while(i!=q_rear[q]){
+        q_pid[q][i]=q_pid[q][(i+1)%NPROC];
+        i=(i+1)%NPROC;
+    }
+    q_pid[q][q_rear[q]] = -1;
+    q_rear[q]=(q_rear[q]+NPROC-1)%NPROC;
     q_size[q]--;
     return pid;
 }

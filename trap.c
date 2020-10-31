@@ -108,8 +108,26 @@ trap(struct trapframe *tf)
 
   #if SCHEDULER == MLFQ
     if(myproc() && myproc()->state == RUNNING && tf->trapno == T_IRQ0 + IRQ_TIMER && myproc()->limit_ticks<=0){
+
       if(myproc()->cur_q!=4) myproc()->cur_q++;
-      cprintf("Process %d kicked out to queue %d\n",myproc()->pid,myproc()->cur_q);
+
+      // assign the aging_ticks!
+      switch(myproc()->cur_q){
+        case 1:
+        myproc()->aging_ticks= 16;
+        break;
+        case 2:
+        myproc()->aging_ticks= 32;
+        break;
+        case 3:
+        myproc()->aging_ticks= 64;
+        break;
+        case 4:
+        myproc()->aging_ticks= 128;
+        break;
+      }
+
+      // cprintf("Process %d kicked out to queue %d\n",myproc()->pid,myproc()->cur_q);
       yield();
     }
   #elif SCHEDULER !=FCFS

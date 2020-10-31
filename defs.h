@@ -124,6 +124,7 @@ void            yield(void);
 void            upd_times(void);
 int             waitx(int*,int*);
 int             set_priority(int, int);
+void            ps(void);
 //
 
 // swtch.S
@@ -194,12 +195,13 @@ void            clearpteu(pde_t *pgdir, char *uva);
 //queue.c
 #if SCHEDULER == MLFQ
 void            qinit(void);
-int             isQFull(int q);
-int             isQEmpty(int q);
-int             push(int q, int pid);
-int             pop(int q);
-int             front(int q);
-int             rear(int q);
+int             isQFull(int);
+int             isQEmpty(int);
+int             push(int, int);
+int             pop(int);
+int             front(int);
+int             rear(int);
+int             removeq(int, int);
 #endif
 
 // number of elements in fixed-size array

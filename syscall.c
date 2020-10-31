@@ -106,6 +106,7 @@ extern int sys_uptime(void);
 // mytweak
 extern int sys_waitx(void);
 extern int sys_set_priority(void);
+extern int sys_ps(void);
 //
 
 static int (*syscalls[])(void) = {
@@ -133,6 +134,7 @@ static int (*syscalls[])(void) = {
 // mytweak
 [SYS_waitx]   sys_waitx,
 [SYS_set_priority] sys_set_priority,
+[SYS_ps]      sys_ps,
 //
 };
 

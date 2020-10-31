@@ -111,4 +111,9 @@ int sys_set_priority(){
     return -1;
   return set_priority(new_priority,pid);
 }
+
+int sys_ps(){
+  ps();
+  return 0;
+}
 //
