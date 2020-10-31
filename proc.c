@@ -90,14 +90,21 @@ found:
   p->pid = nextpid++;
 
   // mytweak
-  acquire(&tickslock);
+  // acquire(&tickslock);
   p->ctime = ticks;
-  release(&tickslock);
+  // release(&tickslock);
   p->etime = 0;
   p->rtime = 0;
   p->last_wait_time=0;
   p->total_wait_time=0;
   p->pri = 60;
+  #if SCHEDULER==MLFQ
+  p->cur_q=0;
+  int i;
+  for(i=0;i<NUM_Q;i++){
+    p->q_ticks[i]=0;
+  }
+  #endif
   //
   release(&ptable.lock);
 
@@ -159,6 +166,9 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  #if SCHEDULER==MLFQ
+  push(p->cur_q,p->pid); // push it!
+  #endif
 
   release(&ptable.lock);
 }
@@ -225,6 +235,9 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  #if SCHEDULER==MLFQ
+  push(np->cur_q,np->pid); // push it!
+  #endif
 
   release(&ptable.lock);
 
@@ -271,9 +284,9 @@ exit(void)
     }
   }
   // mytweak
-  acquire(&tickslock);
+  // acquire(&tickslock);
   curproc->etime = ticks;
-  release(&tickslock);
+  // release(&tickslock);
   //
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
@@ -336,7 +349,7 @@ wait(void)
 void
 scheduler(void)
 {
-  struct proc *p;
+  struct proc *p=0;
   struct cpu *c = mycpu();
   c->proc = 0;
 
@@ -442,7 +455,50 @@ scheduler(void)
       c->proc = 0;
       release(&ptable.lock);
     #elif SCHEDULER == MLFQ
-      // TBI
+      int q=0;
+      int pid=-1;
+      acquire(&ptable.lock);
+      for(q=0;q<NUM_Q;q++){
+        if(isQEmpty(q)) continue;
+
+        pid = pop(q);
+        break;
+      }
+      if(pid==-1){
+        release(&ptable.lock);
+        continue;
+      }
+      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->pid == pid) break;
+      }
+
+      if(p == 0){  // theres no process
+        release(&ptable.lock);
+        continue;
+      }
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      cprintf("Process %d scheduled from %d queue\n",p->pid,p->cur_q);
+      c->proc = p;
+      switchuvm(p);
+      p->last_wait_time=0;
+
+      // assign the limit_ticks
+      if(q==0) p->limit_ticks=1;
+      else if(q==1) p->limit_ticks=2;
+      else if(q==2) p->limit_ticks=4;
+      else if(q==3) p->limit_ticks=8;
+      else if(q==4) p->limit_ticks=16;
+
+      p->state = RUNNING;
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+      release(&ptable.lock);
     # endif
   }
 }
@@ -479,6 +535,9 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
+  #if SCHEDULER==MLFQ
+  push(myproc()->cur_q,myproc()->pid); // push it!
+  #endif
   sched();
   release(&ptable.lock);
 }
@@ -552,8 +611,12 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
+      #if SCHEDULER==MLFQ
+      push(p->cur_q,p->pid); // push it!
+      #endif
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -578,8 +641,12 @@ kill(int pid)
     if(p->pid == pid){
       p->killed = 1;
       // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
+      if(p->state == SLEEPING){
         p->state = RUNNABLE;
+        #if SCHEDULER==MLFQ
+        push(p->cur_q,p->pid); // push it!
+        #endif
+      }
       release(&ptable.lock);
       return 0;
     }
@@ -629,17 +696,26 @@ procdump(void)
 void
 upd_times(void){
   struct proc* p;
-  acquire(&ptable.lock);
+  // acquire(&ptable.lock);
   for(p=ptable.proc; p<&ptable.proc[NPROC]; p++){
     if(p->state == RUNNING){
       p->rtime++;
+
+      #if SCHEDULER==MLFQ
+      p->limit_ticks--;
+      #endif
     }
     else if(p->state == RUNNABLE){
       p->last_wait_time++;
       p->total_wait_time++;
+
+      #if SCHEDULER==MLFQ
+      p->q_ticks[p->cur_q]++;
+      #endif
     }
   }
-  release(&ptable.lock);
+
+  // release(&ptable.lock);
 }
 
 
@@ -701,18 +777,18 @@ set_priority(int new_priority,int pid){
   struct proc *p;
   int old_priority;
 
-  acquire(&ptable.lock);
+  // acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->pid!=pid) continue;
 
     // Found the process
     old_priority = p->pri;
-    release(&ptable.lock);
     p->pri = new_priority;
+    // release(&ptable.lock);
 
     if(new_priority < old_priority) yield();  // mentioned in pdf
     return old_priority;
   }
-  release(&ptable.lock);
+  // release(&ptable.lock);
   return -1;
 }

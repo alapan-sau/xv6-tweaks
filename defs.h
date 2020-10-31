@@ -191,5 +191,16 @@ void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
 
+//queue.c
+#if SCHEDULER == MLFQ
+void            qinit(void);
+int             isQFull(int q);
+int             isQEmpty(int q);
+int             push(int q, int pid);
+int             pop(int q);
+int             front(int q);
+int             rear(int q);
+#endif
+
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

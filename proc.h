@@ -1,3 +1,9 @@
+// queue
+#if SCHEDULER == MLFQ
+#define NUM_Q 5
+#endif
+
+
 // Per-CPU state
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -57,6 +63,12 @@ struct proc {
   uint last_wait_time;
   uint total_wait_time;
   uint pri;
+
+  #if SCHEDULER==MLFQ
+  int q_ticks[5];
+  int limit_ticks;
+  int cur_q;
+  #endif
   //
 };
 

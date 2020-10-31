@@ -27,6 +27,9 @@ main(void)
   consoleinit();   // console hardware
   uartinit();      // serial port
   pinit();         // process table
+  #if SCHEDULER == MLFQ
+  qinit();
+  #endif
   tvinit();        // trap vectors
   binit();         // buffer cache
   fileinit();      // file table
