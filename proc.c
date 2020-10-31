@@ -104,7 +104,7 @@ found:
   for(i=0;i<NUM_Q;i++){
     p->q_ticks[i]=0;
   }
-  p->aging_ticks = 0;
+  p->aging_ticks = 1;
   //
   release(&ptable.lock);
 
@@ -167,6 +167,21 @@ userinit(void)
 
   p->state = RUNNABLE;
   #if SCHEDULER==MLFQ
+  // assign the aging_ticks!
+  switch(p->cur_q){
+    case 1:
+    p->aging_ticks= 16;
+    break;
+    case 2:
+    p->aging_ticks= 32;
+    break;
+    case 3:
+    p->aging_ticks= 64;
+    break;
+    case 4:
+    p->aging_ticks= 128;
+    break;
+  }
   push(p->cur_q,p->pid); // push it!
   #endif
 
@@ -236,6 +251,22 @@ fork(void)
 
   np->state = RUNNABLE;
   #if SCHEDULER==MLFQ
+
+  // assign the aging_ticks!
+  switch(np->cur_q){
+    case 1:
+    np->aging_ticks= 16;
+    break;
+    case 2:
+    np->aging_ticks= 32;
+    break;
+    case 3:
+    np->aging_ticks= 64;
+    break;
+    case 4:
+    np->aging_ticks= 128;
+    break;
+  }
   push(np->cur_q,np->pid); // push it!
   #endif
 
@@ -482,7 +513,7 @@ scheduler(void)
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      // cprintf("Process %d scheduled from %d queue\n",p->pid,p->cur_q);
+      cprintf("process %d scheduled from queue %d on cpu %d\n",p->pid,p->cur_q,c->apicid);
       c->proc = p;
       switchuvm(p);
       p->last_wait_time=0;
@@ -539,6 +570,22 @@ yield(void)
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
   #if SCHEDULER==MLFQ
+
+  // assign the aging_ticks!
+  switch(myproc()->cur_q){
+    case 1:
+    myproc()->aging_ticks= 16;
+    break;
+    case 2:
+    myproc()->aging_ticks= 32;
+    break;
+    case 3:
+    myproc()->aging_ticks= 64;
+    break;
+    case 4:
+    myproc()->aging_ticks= 128;
+    break;
+  }
   push(myproc()->cur_q,myproc()->pid); // push it!
   #endif
   sched();
@@ -617,6 +664,22 @@ wakeup1(void *chan)
     if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
       #if SCHEDULER==MLFQ
+
+      // assign the aging_ticks!
+      switch(p->cur_q){
+        case 1:
+        p->aging_ticks= 16;
+        break;
+        case 2:
+        p->aging_ticks= 32;
+        break;
+        case 3:
+        p->aging_ticks= 64;
+        break;
+        case 4:
+        p->aging_ticks= 128;
+        break;
+      }
       push(p->cur_q,p->pid); // push it!
       #endif
     }
@@ -647,6 +710,22 @@ kill(int pid)
       if(p->state == SLEEPING){
         p->state = RUNNABLE;
         #if SCHEDULER==MLFQ
+
+        // assign the aging_ticks!
+        switch(p->cur_q){
+          case 1:
+          p->aging_ticks= 16;
+          break;
+          case 2:
+          p->aging_ticks= 32;
+          break;
+          case 3:
+          p->aging_ticks= 64;
+          break;
+          case 4:
+          p->aging_ticks= 128;
+          break;
+        }
         push(p->cur_q,p->pid); // push it!
         #endif
       }
@@ -705,11 +784,12 @@ upd_times(void){
       p->rtime++;
 
       #if SCHEDULER==MLFQ
-      p->limit_ticks--; // change it
+      p->limit_ticks--;
       p->q_ticks[p->cur_q]++;
       #endif
     }
     else if(p->state == RUNNABLE){
+      // cprintf("%d %d %d\n",ticks,p->pid,p->cur_q);
       p->last_wait_time++;
       p->total_wait_time++;
 
@@ -721,7 +801,7 @@ upd_times(void){
           removeq(p->cur_q,p->pid);
           p->last_wait_time=0;
           p->cur_q--;
-          push(p->cur_q,p->pid);
+
           // assign the aging_ticks!
           switch(p->cur_q){
             case 1:
@@ -737,7 +817,8 @@ upd_times(void){
             p->aging_ticks= 128;
             break;
           }
-      //     cprintf("Process %d moved up to queue %d\n",p->pid,p->cur_q);
+          push(p->cur_q,p->pid);
+          cprintf("process %d aged to queue %d\n",p->pid, p->cur_q);
         }
       }
       #endif
