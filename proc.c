@@ -184,10 +184,10 @@ userinit(void)
   // assign the aging_ticks!
   switch(p->cur_q){
     case 1:
-    p->aging_ticks= 16;
+    p->aging_ticks= 10;
     break;
     case 2:
-    p->aging_ticks= 17;
+    p->aging_ticks= 15;
     break;
     case 3:
     p->aging_ticks= 20;
@@ -270,10 +270,10 @@ fork(void)
   // assign the aging_ticks!
   switch(np->cur_q){
     case 1:
-    np->aging_ticks= 16;
+    np->aging_ticks= 10;
     break;
     case 2:
-    np->aging_ticks= 17;
+    np->aging_ticks= 15;
     break;
     case 3:
     np->aging_ticks= 20;
@@ -589,10 +589,10 @@ yield(void)
   // assign the aging_ticks!
   switch(myproc()->cur_q){
     case 1:
-    myproc()->aging_ticks= 16;
+    myproc()->aging_ticks= 10;
     break;
     case 2:
-    myproc()->aging_ticks= 17;
+    myproc()->aging_ticks= 15;
     break;
     case 3:
     myproc()->aging_ticks= 20;
@@ -684,10 +684,10 @@ wakeup1(void *chan)
       // assign the aging_ticks!
       switch(p->cur_q){
         case 1:
-        p->aging_ticks= 16;
+        p->aging_ticks= 10;
         break;
         case 2:
-        p->aging_ticks= 17;
+        p->aging_ticks= 15;
         break;
         case 3:
         p->aging_ticks= 20;
@@ -731,10 +731,10 @@ kill(int pid)
         // assign the aging_ticks!
         switch(p->cur_q){
           case 1:
-          p->aging_ticks= 16;
+          p->aging_ticks= 10;
           break;
           case 2:
-          p->aging_ticks= 17;
+          p->aging_ticks= 15;
           break;
           case 3:
           p->aging_ticks= 20;
@@ -822,10 +822,10 @@ upd_times(void){
           // assign the aging_ticks!
           switch(p->cur_q){
             case 1:
-            p->aging_ticks= 16;
+            p->aging_ticks= 10;
             break;
             case 2:
-            p->aging_ticks= 17;
+            p->aging_ticks= 15;
             break;
             case 3:
             p->aging_ticks= 20;
