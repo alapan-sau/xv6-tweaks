@@ -89,24 +89,37 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
 
-  // mytweak
-  // acquire(&tickslock);
   p->ctime = ticks;
-  // release(&tickslock);
   p->etime = 0;
   p->rtime = 0;
   p->last_wait_time=0;
   p->total_wait_time=0;
-  p->pri = 60;
   p->n_run=0;
-  p->cur_q=0;
+  #if SCHEDULER == PBS
+  p->pri = 60;
+  #else
+  p->pri = -1;
+  #endif
+
+
+  #if SCHEDULER==MLFQ
   int i;
   for(i=0;i<NUM_Q;i++){
     p->q_ticks[i]=0;
   }
   p->aging_ticks = 1;
-  cprintf("%d %d %d\n",ticks, p->pid, p->cur_q); // p
-  //
+  p->cur_q=0;
+  // cprintf("%d %d %d\n",p->ctime, p->pid, p->cur_q);
+  #else
+  int i;
+  for(i=0;i<NUM_Q;i++){
+    p->q_ticks[i]=-1;
+  }
+  p->aging_ticks = -1;
+  p->cur_q=-1;
+  #endif
+
+
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -317,12 +330,11 @@ exit(void)
         wakeup1(initproc);
     }
   }
-  // mytweak
-  // acquire(&tickslock);
   curproc->etime = ticks;
-  cprintf("%d %d %d\n",ticks,curproc->pid,curproc->cur_q);
-  // release(&tickslock);
-  //
+  #if SCHEDULER==MLFQ
+  // cprintf("%d %d %d\n",curproc->etime,curproc->pid,curproc->cur_q);
+  #endif
+
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
   sched();
@@ -471,7 +483,7 @@ scheduler(void)
           }
         }
       }
-      if(high == 0){  // theres no high process
+      if(high == 0){  // theres no first process
         release(&ptable.lock);
         continue;
       }
@@ -517,8 +529,6 @@ scheduler(void)
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      // cprintf("process %d scheduled from queue %d on cpu %d\n",p->pid,p->cur_q,c->apicid);
-
       c->proc = p;
       switchuvm(p);
       p->last_wait_time=0;
@@ -531,7 +541,6 @@ scheduler(void)
       else if(q==4) p->limit_ticks=16;
 
       p->state = RUNNING;
-      // cprintf("%d %d %d\n",ticks,p->pid, p->cur_q); // p
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -798,7 +807,6 @@ upd_times(void){
       #endif
     }
     else if(p->state == RUNNABLE){
-      // cprintf("%d %d %d\n",ticks,p->pid,p->cur_q); // p
       p->last_wait_time++;
       p->total_wait_time++;
 
@@ -827,7 +835,7 @@ upd_times(void){
             break;
           }
           push(p->cur_q,p->pid);
-          cprintf("%d %d %d\n",ticks, p->pid, p->cur_q); // p
+          // cprintf("%d %d %d\n",ticks, p->pid, p->cur_q); // p
         }
       }
       #endif
@@ -910,8 +918,10 @@ set_priority(int new_priority,int pid){
   }
   // release(&ptable.lock);
   return -1;
+  return -1;
 }
 
+// lists the processes along with relevant details
 void
 ps(void){
   static char *states[] = {
@@ -924,13 +934,13 @@ ps(void){
   };
   struct proc* p;
   char *state;
-  cprintf("PID Priority State r_time w_time n_run cur_q q0 q1 q2 q3 q4\n\n");
+  cprintf(" PID  Priority  State    r_time w_time n_run  cur_q   q0   q1   q2   q3   q4 \n\n");
 
   acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state==UNUSED) continue;
     state = states[p->state];
-    cprintf("%d            %d         %s          %d          %d               %d            %d                 %d      %d     %d      %d   %d\n",p->pid, p->pri, state, p->rtime, p->last_wait_time, p->n_run, p->cur_q, p->q_ticks[0], p->q_ticks[1], p->q_ticks[2], p->q_ticks[3], p->q_ticks[4]);
+    cprintf(" %d    %d        %s    %d      %d      %d     %d    %d    %d    %d    %d   %d\n",p->pid, p->pri, state, p->rtime, p->last_wait_time, p->n_run, p->cur_q, p->q_ticks[0], p->q_ticks[1], p->q_ticks[2], p->q_ticks[3], p->q_ticks[4]);
   }
   release(&ptable.lock);
 }
