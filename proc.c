@@ -105,6 +105,7 @@ found:
     p->q_ticks[i]=0;
   }
   p->aging_ticks = 1;
+  cprintf("%d %d %d\n",ticks, p->pid, p->cur_q); // p
   //
   release(&ptable.lock);
 
@@ -173,15 +174,16 @@ userinit(void)
     p->aging_ticks= 16;
     break;
     case 2:
-    p->aging_ticks= 32;
+    p->aging_ticks= 17;
     break;
     case 3:
-    p->aging_ticks= 64;
+    p->aging_ticks= 20;
     break;
     case 4:
-    p->aging_ticks= 128;
+    p->aging_ticks= 40;
     break;
   }
+  p->last_wait_time=0;
   push(p->cur_q,p->pid); // push it!
   #endif
 
@@ -258,15 +260,16 @@ fork(void)
     np->aging_ticks= 16;
     break;
     case 2:
-    np->aging_ticks= 32;
+    np->aging_ticks= 17;
     break;
     case 3:
-    np->aging_ticks= 64;
+    np->aging_ticks= 20;
     break;
     case 4:
-    np->aging_ticks= 128;
+    np->aging_ticks= 40;
     break;
   }
+  np->last_wait_time=0;
   push(np->cur_q,np->pid); // push it!
   #endif
 
@@ -317,6 +320,7 @@ exit(void)
   // mytweak
   // acquire(&tickslock);
   curproc->etime = ticks;
+  cprintf("%d %d %d\n",ticks,curproc->pid,curproc->cur_q);
   // release(&tickslock);
   //
   // Jump into the scheduler, never to return.
@@ -413,7 +417,7 @@ scheduler(void)
       }
       release(&ptable.lock);
     #elif SCHEDULER == FCFS
-      int mintime = ticks;
+      int mintime = ticks+1;
       struct proc *first = 0;
       // Loop over process table looking for process to run.
       acquire(&ptable.lock);
@@ -513,7 +517,8 @@ scheduler(void)
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      cprintf("process %d scheduled from queue %d on cpu %d\n",p->pid,p->cur_q,c->apicid);
+      // cprintf("process %d scheduled from queue %d on cpu %d\n",p->pid,p->cur_q,c->apicid);
+
       c->proc = p;
       switchuvm(p);
       p->last_wait_time=0;
@@ -526,6 +531,7 @@ scheduler(void)
       else if(q==4) p->limit_ticks=16;
 
       p->state = RUNNING;
+      // cprintf("%d %d %d\n",ticks,p->pid, p->cur_q); // p
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -577,15 +583,16 @@ yield(void)
     myproc()->aging_ticks= 16;
     break;
     case 2:
-    myproc()->aging_ticks= 32;
+    myproc()->aging_ticks= 17;
     break;
     case 3:
-    myproc()->aging_ticks= 64;
+    myproc()->aging_ticks= 20;
     break;
     case 4:
-    myproc()->aging_ticks= 128;
+    myproc()->aging_ticks= 40;
     break;
   }
+  myproc()->last_wait_time=0;
   push(myproc()->cur_q,myproc()->pid); // push it!
   #endif
   sched();
@@ -671,15 +678,16 @@ wakeup1(void *chan)
         p->aging_ticks= 16;
         break;
         case 2:
-        p->aging_ticks= 32;
+        p->aging_ticks= 17;
         break;
         case 3:
-        p->aging_ticks= 64;
+        p->aging_ticks= 20;
         break;
         case 4:
-        p->aging_ticks= 128;
+        p->aging_ticks= 40;
         break;
       }
+      p->last_wait_time=0;
       push(p->cur_q,p->pid); // push it!
       #endif
     }
@@ -717,15 +725,16 @@ kill(int pid)
           p->aging_ticks= 16;
           break;
           case 2:
-          p->aging_ticks= 32;
+          p->aging_ticks= 17;
           break;
           case 3:
-          p->aging_ticks= 64;
+          p->aging_ticks= 20;
           break;
           case 4:
-          p->aging_ticks= 128;
+          p->aging_ticks= 40;
           break;
         }
+        p->last_wait_time=0;
         push(p->cur_q,p->pid); // push it!
         #endif
       }
@@ -789,7 +798,7 @@ upd_times(void){
       #endif
     }
     else if(p->state == RUNNABLE){
-      // cprintf("%d %d %d\n",ticks,p->pid,p->cur_q);
+      // cprintf("%d %d %d\n",ticks,p->pid,p->cur_q); // p
       p->last_wait_time++;
       p->total_wait_time++;
 
@@ -808,17 +817,17 @@ upd_times(void){
             p->aging_ticks= 16;
             break;
             case 2:
-            p->aging_ticks= 32;
+            p->aging_ticks= 17;
             break;
             case 3:
-            p->aging_ticks= 64;
+            p->aging_ticks= 20;
             break;
             case 4:
-            p->aging_ticks= 128;
+            p->aging_ticks= 40;
             break;
           }
           push(p->cur_q,p->pid);
-          cprintf("process %d aged to queue %d\n",p->pid, p->cur_q);
+          cprintf("%d %d %d\n",ticks, p->pid, p->cur_q); // p
         }
       }
       #endif

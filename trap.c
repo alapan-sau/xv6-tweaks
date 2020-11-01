@@ -111,7 +111,8 @@ trap(struct trapframe *tf)
 
       if(myproc()->cur_q!=4){
          myproc()->cur_q++;
-         cprintf("process %d demoted to queue %d\n",myproc()->pid,myproc()->cur_q);
+        //  cprintf("process %d demoted to queue %d\n",myproc()->pid,myproc()->cur_q);
+        cprintf("%d %d %d\n",ticks, myproc()->pid, myproc()->cur_q); // p
       }
       // cprintf("Process %d kicked out to queue %d\n",myproc()->pid,myproc()->cur_q);
       yield();
