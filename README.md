@@ -68,8 +68,8 @@ Each process has a priority associated with it between `0` to `100`  (`60 by def
 There are five priority queues, with the highest priority being number as 0 and the bottom queue with the lowest priority as 4.
 The time-quantum for priority 0 is 1 timer tick. The time-quantum for priority 1 is 2 timer ticks; for priority 2, it is 4 timer ticks; for priority 3, it is 8 timer ticks; for priority 4, it is 16 timer ticks.<br>
 On the initiation of a process, it is pushed to the end of the highest priority queue.<br>
-If the process uses the complete time slice assigned for its current priority queue, it is preempted and ​inserted at the end of the next lower level queue. If a process voluntarily relinquishes control of the CPU, it leaves the queuing network, and when the process becomes ready again after the I/O, it is​ ​inserted at the tail of the same queue, from which it is relinquished earlier​.<br>
-`NOTE : A process might exploit this by intentionally relinquising the control of CPU just before the last tick and retaining the same priority level`
+If the process uses the complete time slice assigned for its current priority queue, it is preempted and inserted at the end of the next lower level queue. If a process voluntarily relinquishes control of the CPU, it leaves the queuing network, and when the process becomes ready again after the I/O, it is inserted at the tail of the same queue, from which it is relinquished earlier.<br>
+`NOTE : A process might exploit this by intentionally relinquising the control of CPU just before the last tick and retaining the same priority level`
 <br><br>
 A round-robin scheduler should be used for processes at the lowest priority queue.<br>
 To prevent `starvation`, we implement `aging` by limiting the waiting time for 10,20,30 and 40 clock ticks in q0, q1, q3, q4 respectively.<br>
