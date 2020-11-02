@@ -11,8 +11,12 @@ int waitx(int* wtime, int*rtime)
 #### Description
 The two arguments are pointers to integers to which waitx will assign the total number of clock ticks during which process was waiting and the total number of clock ticks when the process was running.
 #### Return values
-It returns the 0 on success, and -1 on failure.
+It returns the 0 on success, and -1 on failure.<br><br>
 
+The user command `time` can be used to get the waiting and running times of any process. For e.g
+```shell
+$time benchmark
+```
 ### set_priority()
 
 #### Synopsis
@@ -23,7 +27,7 @@ int set_priority(int new_priority, int pid)
 The system-call sets the priority of a process `pid` to `new_priority` between 0 to 100. In case the priority of the process increases (the value is lower than before), then rescheduling should be done immediately (for PBS scheduler).
 
 #### Return values
-It returns the `old_priority` on success, and -1 on failure.
+It returns the `old_priority` on success, and -1 on failure.<br><br>.
 
 ### ps()
 
@@ -44,6 +48,11 @@ whenever the process gets to run on CPU or if a change in the queue takes place 
 - `cur_q` - ​Current queue (check task 2 part C)
 - `q{i}` ​- Number of ticks the process has received at each of the 5 queues.
 
+
+The user command `ps` implemented to invoke the ps syscall. For e.g
+```shell
+$ps
+```
 ## Schedulers
 
 ### FCFS
@@ -67,7 +76,8 @@ To prevent `starvation`, we implement `aging` by limiting the waiting time for 1
 The queue data structure and related functions used for priority queues in MLFQ are implemented in the file `queue.c`.
 
 ## Comparision of the Schedulers
-
+The various schedulers have been tested on the `benchmark` program and the results are compared and documented below. Note that the following results are obtained by running the algorithms on a single CPU(for a better understanding and easier analysis) and results might slightly vary for multiple CPUs. The results might vary along processors and machines.<br><br>
+Note: The PID of the processes are mentioned along with the waiting and running ticks and not the process number.
 
 ## FCFS
 ```shell
